@@ -53,13 +53,95 @@ app.post("/houses", async (req: Request, res: Response) => {
   }
 });
 
-// GET All Houses
+// GET All Houses (Search + Filter + Sort + Pagination)
 app.get("/houses", async (req: Request, res: Response) => {
-  const houses = await housesCollection.find().toArray();
-  res.send(houses);
-});
+  try {
+    const {
+      search = "",
+      category = "",
+      division = "",
+      sort = "",
+      page = "1",
+      limit = "8",
+    } = req.query;
 
-// GET Single House
+    const query: any = {};
+
+    // Search by title
+    if (search) {
+      query.title = {
+        $regex: String(search),
+        $options: "i",
+      };
+    }
+
+    // Filter by category
+    if (category && category !== "All") {
+      query.category = String(category);
+    }
+
+    // Filter by division
+    if (division && division !== "All") {
+      query.division = String(division);
+    }
+
+    // Sorting
+    let sortOption: any = {};
+
+    switch (sort) {
+      case "low":
+        sortOption = { rent: 1 };
+        break;
+
+      case "high":
+        sortOption = { rent: -1 };
+        break;
+
+      case "new":
+        sortOption = { _id: -1 };
+        break;
+
+      case "old":
+        sortOption = { _id: 1 };
+        break;
+
+      default:
+        sortOption = {};
+    }
+
+    const currentPage = Number(page);
+    const perPage = Number(limit);
+
+    const skip = (currentPage - 1) * perPage;
+
+    const total = await housesCollection.countDocuments(query);
+
+    const houses = await housesCollection
+      .find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(perPage)
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      houses,
+      total,
+      currentPage,
+      totalPages: Math.ceil(total / perPage),
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch houses",
+    });
+
+  }
+});
 // GET Single House
 app.get("/houses/:id", async (req: Request, res: Response) => {
   try {
