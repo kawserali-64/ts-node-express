@@ -142,6 +142,63 @@ app.get("/houses", async (req: Request, res: Response) => {
 
   }
 });
+
+// GET Related Houses
+// GET Related Houses
+app.get("/houses/:id/related", async (req: Request, res: Response) => {
+  try {
+
+    const id = String(req.params.id);
+
+
+    const currentHouse = await housesCollection.findOne({
+      _id: new ObjectId(id)
+    });
+
+
+    if (!currentHouse) {
+      return res.status(404).json({
+        success:false,
+        message:"House not found"
+      });
+    }
+
+
+    const relatedHouses = await housesCollection
+      .find({
+        _id:{
+          $ne:new ObjectId(id)
+        },
+
+        category: currentHouse.category,
+
+        division: currentHouse.division,
+
+        propertyType: currentHouse.propertyType
+      })
+      .limit(4)
+      .toArray();
+
+
+
+    res.status(200).json({
+      success:true,
+      houses:relatedHouses
+    });
+
+
+  } catch(error){
+
+    console.log(error);
+
+    res.status(500).json({
+      success:false,
+      message:"Failed to get related houses"
+    });
+
+  }
+});
+
 // GET Single House
 app.get("/houses/:id", async (req: Request, res: Response) => {
   try {
@@ -176,6 +233,7 @@ app.get("/houses/:id", async (req: Request, res: Response) => {
 
   }
 });
+
 // Home Route
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
