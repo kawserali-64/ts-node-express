@@ -188,16 +188,16 @@ app.get("/houses/:id/related", async (req: Request, res: Response) => {
 
     if (!currentHouse) {
       return res.status(404).json({
-        success:false,
-        message:"House not found"
+        success: false,
+        message: "House not found"
       });
     }
 
 
     const relatedHouses = await housesCollection
       .find({
-        _id:{
-          $ne:new ObjectId(id)
+        _id: {
+          $ne: new ObjectId(id)
         },
 
         category: currentHouse.category,
@@ -212,20 +212,41 @@ app.get("/houses/:id/related", async (req: Request, res: Response) => {
 
 
     res.status(200).json({
-      success:true,
-      houses:relatedHouses
+      success: true,
+      houses: relatedHouses
     });
 
 
-  } catch(error){
+  } catch (error) {
 
     console.log(error);
 
     res.status(500).json({
-      success:false,
-      message:"Failed to get related houses"
+      success: false,
+      message: "Failed to get related houses"
     });
 
+  }
+});
+
+// GET Featured Houses
+app.get("/featured-houses", async (req: Request, res: Response) => {
+  try {
+    const houses = await housesCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      houses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured houses",
+    });
   }
 });
 
@@ -275,29 +296,29 @@ app.delete("/houses/:id", async (req: Request, res: Response) => {
     });
 
 
-    if(result.deletedCount === 0){
+    if (result.deletedCount === 0) {
 
       return res.status(404).json({
-        success:false,
-        message:"House not found"
+        success: false,
+        message: "House not found"
       });
 
     }
 
 
     res.status(200).json({
-      success:true,
-      message:"House deleted successfully"
+      success: true,
+      message: "House deleted successfully"
     });
 
 
-  } catch(error){
+  } catch (error) {
 
     console.log(error);
 
     res.status(500).json({
-      success:false,
-      message:"Failed to delete house"
+      success: false,
+      message: "Failed to delete house"
     });
 
   }
