@@ -143,7 +143,37 @@ app.get("/houses", async (req: Request, res: Response) => {
   }
 });
 
-// GET Related Houses
+// GET My Houses
+app.get("/my-houses/:ownerId", async (req: Request, res: Response) => {
+  try {
+    const ownerId = req.params.ownerId;
+
+    const houses = await housesCollection
+      .find({
+        ownerId: ownerId,
+      })
+      .sort({
+        _id: -1,
+      })
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      houses,
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to get my houses",
+    });
+
+  }
+});
+
 // GET Related Houses
 app.get("/houses/:id/related", async (req: Request, res: Response) => {
   try {
@@ -229,6 +259,45 @@ app.get("/houses/:id", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to get house",
+    });
+
+  }
+});
+
+// DELETE House
+app.delete("/houses/:id", async (req: Request, res: Response) => {
+  try {
+
+    const id = String(req.params.id);
+
+    const result = await housesCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
+
+
+    if(result.deletedCount === 0){
+
+      return res.status(404).json({
+        success:false,
+        message:"House not found"
+      });
+
+    }
+
+
+    res.status(200).json({
+      success:true,
+      message:"House deleted successfully"
+    });
+
+
+  } catch(error){
+
+    console.log(error);
+
+    res.status(500).json({
+      success:false,
+      message:"Failed to delete house"
     });
 
   }
