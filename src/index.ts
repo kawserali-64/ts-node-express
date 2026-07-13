@@ -229,6 +229,110 @@ app.get("/houses/:id/related", async (req: Request, res: Response) => {
   }
 });
 
+// GET Dashboard Statistics
+app.get("/dashboard", async (req: Request, res: Response) => {
+  try {
+    // Summary
+    const totalHouses = await housesCollection.countDocuments();
+
+    const availableHouses = await housesCollection.countDocuments({
+      availability: "Available",
+    });
+
+    const rentedHouses = await housesCollection.countDocuments({
+      availability: "Rented",
+    });
+
+    // Category Distribution (Pie Chart)
+    const categories = await housesCollection
+      .aggregate([
+        {
+          $group: {
+            _id: "$category",
+            value: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            name: "$_id",
+            value: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    // Monthly Houses Added (Bar Chart)
+    const monthly = await housesCollection
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              $month: {
+                $toDate: "$createdAt",
+              },
+            },
+            houses: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $sort: {
+            _id: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    // Month Names
+    const monthNames = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const monthlyData = monthly.map((item) => ({
+      month: monthNames[item._id],
+      houses: item.houses,
+    }));
+
+    // Response
+    res.status(200).json({
+      success: true,
+
+      summary: {
+        totalHouses,
+        availableHouses,
+        rentedHouses,
+      },
+
+      categories,
+
+      monthly: monthlyData,
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dashboard statistics",
+    });
+  }
+});
 // GET Featured Houses
 app.get("/featured-houses", async (req: Request, res: Response) => {
   try {
