@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
+import { createRemoteJWKSet, jwtVerify } from "jose-cjs";
 
 dotenv.config();
 
@@ -32,8 +33,48 @@ async function connectDB() {
 
 connectDB();
 
+const Jwks = createRemoteJWKSet(
+  new URL(`${process.env.NEXT_PUBLIC_CLIENT_URL}/api/auth/jwks`)
+);
+const verifyToken = async (
+  req: Request,
+  res: Response,
+  next: Function
+) => {
+  const authorization = req?.headers.authorization;
+
+  if (!authorization) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized Access",
+    });
+  }
+  const token = authorization?.split(" ")[1];
+  
+  if(!token){
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized Access",
+    });
+  }
+
+  try{
+    const payload = await jwtVerify(token, Jwks);
+    console.log(payload);
+      next();
+
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid Token",
+    });
+  }
+
+};
+
+
 // POST House
-app.post("/houses", async (req: Request, res: Response) => {
+app.post("/houses", verifyToken, async (req: Request, res: Response) => {
   try {
     const house = req.body;
 
@@ -144,7 +185,7 @@ app.get("/houses", async (req: Request, res: Response) => {
 });
 
 // GET My Houses
-app.get("/my-houses/:ownerId", async (req: Request, res: Response) => {
+app.get("/my-houses/:ownerId", verifyToken, async (req: Request, res: Response) => {
   try {
     const ownerId = req.params.ownerId;
 
@@ -230,7 +271,7 @@ app.get("/houses/:id/related", async (req: Request, res: Response) => {
 });
 
 // GET Dashboard Statistics
-app.get("/dashboard", async (req: Request, res: Response) => {
+app.get("/dashboard", verifyToken, async (req: Request, res: Response) => {
   try {
     // Summary
     const totalHouses = await housesCollection.countDocuments();
@@ -390,7 +431,7 @@ app.get("/houses/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE House
-app.delete("/houses/:id", async (req: Request, res: Response) => {
+app.delete("/houses/:id",verifyToken, async (req: Request, res: Response) => {
   try {
 
     const id = String(req.params.id);
