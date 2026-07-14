@@ -24,7 +24,7 @@ const housesCollection = database.collection("houses");
 // Connect MongoDB
 async function connectDB() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("MongoDB connected successfully");
   } catch (error) {
     console.log("MongoDB connection failed", error);
